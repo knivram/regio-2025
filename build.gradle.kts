@@ -30,6 +30,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-core:0.60.0")
     implementation("org.jetbrains.exposed:exposed-jdbc:0.60.0")
     implementation("mysql:mysql-connector-java:8.0.33")
+    implementation("com.h2database:h2:2.2.224")
 }
 
 compose.desktop {
