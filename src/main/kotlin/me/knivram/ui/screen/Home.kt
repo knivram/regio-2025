@@ -30,7 +30,7 @@ import me.knivram.ui.components.AddInput
 import me.knivram.ui.components.TopBar
 import kotlinx.coroutines.launch
 
-class Home: Screen{
+class Home : Screen {
 
     @Composable
     override fun Content() {
@@ -63,7 +63,7 @@ class Home: Screen{
             Column(
                 modifier = Modifier.padding(12.dp).fillMaxWidth(),
             ) {
-                AddInput(placeHolder = "Add todo", onAdd = {addTodo(it)})
+                AddInput(placeHolder = "Add todo", onAdd = { addTodo(it) })
                 LazyColumn {
                     items(todos) { todo ->
                         TodoItem(
@@ -77,10 +77,11 @@ class Home: Screen{
     }
 }
 
-@Composable fun TodoItem(todo: Todo, onDoneChanged: (Boolean) -> Unit) {
+@Composable
+fun TodoItem(todo: Todo, onDoneChanged: (Boolean) -> Unit) {
     val navigator = LocalNavigator.currentOrThrow
     Row(
-        modifier = Modifier.clickable {  navigator.push(Detail(todo)) }
+        modifier = Modifier.clickable { navigator.push(Detail(todo)) }
     ) {
         Checkbox(checked = todo.done, onCheckedChange = onDoneChanged)
         Spacer(Modifier.width(8.dp))

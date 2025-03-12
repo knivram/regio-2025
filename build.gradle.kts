@@ -43,3 +43,18 @@ compose.desktop {
         }
     }
 }
+
+tasks.withType<Jar> {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes["Main-Class"] = "MainKt"
+    }
+
+    val desktopMainSourceSet = kotlin.sourceSets["main"]
+
+    from(desktopMainSourceSet.resources.srcDirs)
+
+    from({
+        configurations["runtimeClasspath"].filter { it.exists() }.map { zipTree(it) }
+    })
+}
