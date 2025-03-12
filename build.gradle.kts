@@ -20,7 +20,11 @@ dependencies {
     // compose.desktop.currentOs should be used in launcher-sourceSet
     // (in a separate module for demo project and in testMain).
     // With compose.desktop.common you will also lose @Preview functionality
-    implementation(compose.desktop.currentOs)
+    implementation(compose.desktop.windows_x64)
+    implementation(compose.desktop.linux_arm64)
+    implementation(compose.desktop.linux_x64)
+    implementation(compose.desktop.macos_arm64)
+    implementation(compose.desktop.macos_x64)
 
     val voyagerVersion = "1.1.0-beta02"
     implementation("cafe.adriel.voyager:voyager-navigator:$voyagerVersion")
@@ -31,6 +35,13 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-jdbc:0.60.0")
     implementation("mysql:mysql-connector-java:8.0.33")
     implementation("com.h2database:h2:2.2.224")
+
+    implementation("org.jetbrains.skiko:skiko-awt-runtime-windows-arm64:0.9.2")
+    implementation("org.jetbrains.skiko:skiko-awt-runtime-windows-x64:0.9.2")
+    implementation("org.jetbrains.skiko:skiko-awt-runtime-linux-arm64:0.9.2")
+    implementation("org.jetbrains.skiko:skiko-awt-runtime-linux-x64:0.9.2")
+    implementation("org.jetbrains.skiko:skiko-awt-runtime-macos-arm64:0.9.2")
+    implementation("org.jetbrains.skiko:skiko-awt-runtime-macos-x64:0.9.2")
 }
 
 compose.desktop {
