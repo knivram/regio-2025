@@ -52,21 +52,24 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "regio-2025"
             packageVersion = "1.0.0"
+
+            // Add modules required for JDBC
+            modules("java.sql", "java.naming")
         }
     }
 }
 
-tasks.withType<Jar> {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    manifest {
-        attributes["Main-Class"] = "MainKt"
-    }
-
-    val desktopMainSourceSet = kotlin.sourceSets["main"]
-
-    from(desktopMainSourceSet.resources.srcDirs)
-
-    from({
-        configurations["runtimeClasspath"].filter { it.exists() }.map { zipTree(it) }
-    })
-}
+//tasks.withType<Jar> {
+//    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+//    manifest {
+//        attributes["Main-Class"] = "MainKt"
+//    }
+//
+//    val desktopMainSourceSet = kotlin.sourceSets["main"]
+//
+//    from(desktopMainSourceSet.resources.srcDirs)
+//
+//    from({
+//        configurations["runtimeClasspath"].filter { it.exists() }.map { zipTree(it) }
+//    })
+//}
