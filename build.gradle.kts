@@ -7,7 +7,8 @@ plugins {
 }
 
 group = "me.knivram"
-version = "1.0-SNAPSHOT"
+val appVersion = System.getenv("GITHUB_EVENT_INPUTS_VERSION") ?: "1.0.0"
+version = appVersion
 
 repositories {
     mavenCentral()
@@ -50,8 +51,9 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            // WARN: when changing the package name, you need to update file paths in windows-release.yml
             packageName = "regio-2025"
-            packageVersion = "1.0.0"
+            packageVersion = appVersion
 
             // Add modules required for JDBC
             modules("java.sql", "java.naming")

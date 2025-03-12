@@ -1,0 +1,59 @@
+name: Windows Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version"
+        required: true
+        default: "1.0.0"
+      prerelease:
+        description: "Is this a prerelease?"
+        type: boolean
+        default: false
+
+# Add permissions needed for creating releases
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: "temurin"
+          java-version: "17"
+          cache: gradle
+
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+
+      - name: Build and package Windows MSI
+        run: |
+          ./gradlew packageMsi
+        env:
+          GITHUB_EVENT_INPUTS_VERSION: ${{ github.event.inputs.version }}
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ github.event.inputs.version }}
+          name: Release v${{ github.event.inputs.version }}
+          draft: false
+          prerelease: ${{ github.event.inputs.prerelease }}
+          files: build/compose/binaries/main/msi/regio-2025-${{ github.event.inputs.version }}.msi
+          body: |
+            ## TodoList App v${{ github.event.inputs.version }}
+
+            ### What's Changed
+            _Add release notes here_
+
+            ### Installation
+            Download the MSI installer and run it to install the application.
