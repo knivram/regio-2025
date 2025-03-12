@@ -30,6 +30,9 @@ fun AddInput(
         trailingIcon = {
             IconButton(
                 onClick = {
+                    if (newEventName.isEmpty()) {
+                        return@IconButton
+                    }
                     onAdd(newEventName)
                     newEventName = ""
                 },
