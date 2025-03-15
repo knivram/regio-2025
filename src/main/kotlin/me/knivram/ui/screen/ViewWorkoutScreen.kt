@@ -35,7 +35,7 @@ class ViewWorkoutScreen(private val workout: Workout) : Screen {
             workout.exercises.forEach { ex ->
                 ex.sets.forEach { set ->
                     volume += set.weight * set.reps
-                    sets += 1
+                    sets++
                     reps += set.reps
                 }
             }
@@ -57,43 +57,46 @@ class ViewWorkoutScreen(private val workout: Workout) : Screen {
                     }
                 )
             }
-        ) {
-            Column(modifier = Modifier
-                .padding(16.dp)
-                .fillMaxSize()) {
-                Text("Total Volume: $totalVolume")
-                Text("Total Sets: $totalSets")
-                Text("Total Reps: $totalReps")
-                Spacer(modifier = Modifier.height(16.dp))
-                Box(modifier = Modifier.weight(1f)) {
-                    LazyColumn {
-                        items(workout.exercises) { we ->
-                            val exercise = exerciseMap[we.exerciseId]
-                            Card(modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(8.dp)) {
-                                Column(modifier = Modifier.padding(8.dp)) {
-                                    Text("Exercise: ${exercise?.name ?: "Unknown"}")
-                                    LazyColumn {
-                                        items(we.sets) { set ->
-                                            Row(
-                                                modifier = Modifier.fillMaxWidth(),
-                                                horizontalArrangement = Arrangement.SpaceBetween
-                                            ) {
-                                                Text("Set ${set.setNumber}: ${set.weight}kg x ${set.reps} reps")
-                                            }
-                                        }
-                                    }
-                                    Button(onClick = { navigator.push(ProgressScreen(exercise ?: return@Button)) }) {
-                                        Text("My Progress")
+        ) { innerPadding ->
+            LazyColumn(
+                modifier = Modifier
+                    .padding(innerPadding)
+                    .fillMaxSize(),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                item {
+                    Text("Total Volume: $totalVolume")
+                    Text("Total Sets: $totalSets")
+                    Text("Total Reps: $totalReps")
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+                items(workout.exercises) { we ->
+                    val exercise = exerciseMap[we.exerciseId]
+                    Card(modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)) {
+                        Column(modifier = Modifier.padding(8.dp)) {
+                            Text("Exercise: ${exercise?.name ?: "Unknown"}")
+                            Column {
+                                we.sets.forEach { set ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("Set ${set.setNumber}: ${set.weight}kg x ${set.reps} reps")
                                     }
                                 }
+                            }
+                            Button(onClick = { navigator.push(ProgressScreen(exercise ?: return@Button)) }) {
+                                Text("My Progress")
                             }
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("Chart Placeholder")
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Chart Placeholder")
+                }
             }
         }
     }
