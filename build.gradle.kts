@@ -52,7 +52,7 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             // WARN: when changing the package name, you need to update file paths in windows-release.yml
-            packageName = "regio-2025"
+            packageName = "AthliTrack"
             packageVersion = appVersion
 
             // Add modules required for JDBC

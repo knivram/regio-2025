@@ -1,6 +1,8 @@
 package me.knivram.repository
 
+import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.insert
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
@@ -16,11 +18,11 @@ object TodoRepository {
         }
     }
 
-//    fun delete(todoId: Int) {
-//        transaction {
-//            TodoTable.deleteWhere { id eq todoId }
-//        }
-//    }
+    fun delete(todoId: Int) {
+        transaction {
+            TodoTable.deleteWhere { id eq todoId }
+        }
+    }
 
     fun update(todo: Todo) {
         transaction {

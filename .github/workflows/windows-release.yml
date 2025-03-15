@@ -48,7 +48,7 @@ jobs:
           name: Release v${{ github.event.inputs.version }}
           draft: false
           prerelease: ${{ github.event.inputs.prerelease }}
-          files: build/compose/binaries/main/msi/regio-2025-${{ github.event.inputs.version }}.msi
+          files: build/compose/binaries/main/msi/AthliTrack-${{ github.event.inputs.version }}.msi
           body: |
             ## TodoList App v${{ github.event.inputs.version }}
 

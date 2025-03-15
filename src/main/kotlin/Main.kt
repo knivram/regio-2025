@@ -57,7 +57,7 @@ fun App() {
 fun main() = application {
     Window(
         onCloseRequest = ::exitApplication,
-        title = "Todolist",
+        title = "AthliTrack",
     ) {
         App()
     }
