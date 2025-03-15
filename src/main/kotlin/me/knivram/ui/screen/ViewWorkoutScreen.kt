@@ -93,10 +93,6 @@ class ViewWorkoutScreen(private val workout: Workout) : Screen {
                         }
                     }
                 }
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("Chart Placeholder")
-                }
             }
         }
     }

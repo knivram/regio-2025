@@ -48,6 +48,8 @@ dependencies {
     implementation("org.jetbrains.skiko:skiko-awt-runtime-macos-x64:0.9.2")
 
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
+
+    implementation("io.github.koalaplot:koalaplot-core:0.8.0")
 }
 
 compose.desktop {
