@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import cafe.adriel.voyager.navigator.Navigator
+import kotlinx.coroutines.runBlocking
 import me.knivram.repository.ExerciseRepository
 import me.knivram.repository.TemplateTable
 import me.knivram.repository.TemplateExerciseTable
@@ -51,15 +52,17 @@ fun App() {
         isUsingH2Mem = true
     }
 
-    transaction {
-        if (ExerciseRepository.getAll().isEmpty()) {
-            val resourceStream = object {}.javaClass.classLoader.getResourceAsStream("exercises.json")
-            if (resourceStream != null) {
-                val jsonText = resourceStream.bufferedReader().readText()
-                ExerciseRepository.importFromJson(jsonText)
+//    transaction {
+        runBlocking {
+            if (ExerciseRepository.getAll().isEmpty()) {
+                val resourceStream = object {}.javaClass.classLoader.getResourceAsStream("exercises.json")
+                if (resourceStream != null) {
+                    val jsonText = resourceStream.bufferedReader().readText()
+                    ExerciseRepository.importFromJson(jsonText)
+                }
             }
         }
-    }
+//    }
 
     MaterialTheme {
         Navigator(Home())

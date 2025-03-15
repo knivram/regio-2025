@@ -5,7 +5,7 @@ import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.selectAll
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import kotlinx.serialization.decodeFromString
@@ -37,27 +37,32 @@ data class ExerciseJson(val name: String, val description: String, val type: Str
 
 object ExerciseRepository {
     val table = ExerciseTable
-    fun getAll(): List<Exercise> = transaction {
+
+    suspend fun getAll(): List<Exercise> = newSuspendedTransaction {
         ExerciseTable.selectAll().map { Exercise.fromRow(it) }
     }
-    fun insert(exercise: Exercise): Int = transaction {
+
+    suspend fun insert(exercise: Exercise): Int = newSuspendedTransaction {
         ExerciseTable.insert {
             it[name] = exercise.name
             it[description] = exercise.description
             it[type] = exercise.type
         } get ExerciseTable.id
     }
-    fun update(exercise: Exercise) = transaction {
+
+    suspend fun update(exercise: Exercise) = newSuspendedTransaction {
         ExerciseTable.update({ ExerciseTable.id eq exercise.id }) {
             it[name] = exercise.name
             it[description] = exercise.description
             it[type] = exercise.type
         }
     }
-    fun delete(exerciseId: Int) = transaction {
+
+    suspend fun delete(exerciseId: Int) = newSuspendedTransaction {
         ExerciseTable.deleteWhere { ExerciseTable.id eq exerciseId }
     }
-    fun importFromJson(jsonText: String) {
+
+    suspend fun importFromJson(jsonText: String) {
         val exercises = Json.decodeFromString<List<ExerciseJson>>(jsonText)
         exercises.forEach {
             insert(Exercise(0, it.name, it.description, it.type))

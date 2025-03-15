@@ -6,7 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -33,19 +33,31 @@ class AddEditWorkoutScreen(private val workout: Workout? = null) : Screen {
         var startText by remember { mutableStateOf(workout?.startDatetime?.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) ?: "") }
         var endText by remember { mutableStateOf(workout?.endDatetime?.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) ?: "") }
         var workoutExercises by remember { mutableStateOf(workout?.exercises?.toMutableList() ?: mutableListOf<WorkoutExercise>()) }
-        val availableExercises = ExerciseRepository.getAll().associate { it.id to it.name }
+        var availableExercises by remember { mutableStateOf<Map<Int, String>>(emptyMap()) }
         var showTemplateDialog by remember { mutableStateOf(false) }
         var selectedTemplate by remember { mutableStateOf<Template?>(null) }
+        var templates by remember { mutableStateOf<List<Template>>(emptyList()) }
+
+        LaunchedEffect(Unit) {
+            availableExercises = ExerciseRepository.getAll().associate { it.id to it.name }
+        }
+
         if (showTemplateDialog) {
+            LaunchedEffect(showTemplateDialog) {
+                templates = TemplateRepository.getAll()
+            }
             AlertDialog(
                 onDismissRequest = { showTemplateDialog = false },
                 title = { Text("Select Template") },
                 text = {
                     Column {
-                        TemplateRepository.getAll().forEach { tmpl ->
-                            Row(modifier = Modifier.fillMaxWidth().padding(8.dp).clickable {
-                                selectedTemplate = tmpl
-                            }) {
+                        templates.forEach { tmpl ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(8.dp)
+                                    .clickable { selectedTemplate = tmpl }
+                            ) {
                                 Text(tmpl.name)
                             }
                         }
@@ -57,7 +69,7 @@ class AddEditWorkoutScreen(private val workout: Workout? = null) : Screen {
                             workoutExercises.clear()
                             tmpl.exercises.forEach { te ->
                                 val sets = (1..te.sets).map { idx -> WorkoutSet(0, 0, idx, 0.0, te.reps) }
-                                workoutExercises.add(WorkoutExercise(0, 0, te.exerciseId, te.position, sets))
+                                workoutExercises.add(WorkoutExercise(0, 0, te.exerciseId, workoutExercises.size + 1, sets))
                             }
                         }
                         showTemplateDialog = false
@@ -69,11 +81,21 @@ class AddEditWorkoutScreen(private val workout: Workout? = null) : Screen {
             )
         }
         Scaffold(topBar = {
-            TopAppBar(title = { Text(if (workout == null) "Add Workout" else "Edit Workout \"${workout.name}\"") }, navigationIcon = {
-                IconButton(onClick = { navigator.pop() }) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back") }
-            })
+            TopAppBar(
+                title = { Text(if (workout == null) "Add Workout" else "Edit Workout \"${workout.name}\"") },
+                navigationIcon = {
+                    IconButton(onClick = { navigator.pop() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                }
+            )
         }) {
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            Column(modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)) {
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Workout Name") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = startText, onValueChange = { startText = it }, label = { Text("Start (yyyy-MM-dd HH:mm)") }, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = endText, onValueChange = { endText = it }, label = { Text("End (yyyy-MM-dd HH:mm)") }, modifier = Modifier.fillMaxWidth())
@@ -88,46 +110,51 @@ class AddEditWorkoutScreen(private val workout: Workout? = null) : Screen {
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("Exercises:")
-                LazyColumn {
-                    itemsIndexed(workoutExercises) { index, we ->
-                        Card(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
-                            Column(modifier = Modifier.padding(8.dp)) {
-                                Text("Exercise: ${availableExercises[we.exerciseId] ?: "Unknown"}")
-                                we.sets.forEachIndexed { setIndex, set ->
-                                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                        OutlinedTextField(
-                                            value = set.weight.toString(),
-                                            onValueChange = {
-                                                val newWeight = it.toDoubleOrNull() ?: 0.0
-                                                we.sets = we.sets.toMutableList().also { list ->
-                                                    list[setIndex] = set.copy(weight = newWeight)
-                                                }
-                                            },
-                                            label = { Text("Weight") },
-                                            modifier = Modifier.width(100.dp)
-                                        )
-                                        OutlinedTextField(
-                                            value = set.reps.toString(),
-                                            onValueChange = {
-                                                val newReps = it.toIntOrNull() ?: 0
-                                                we.sets = we.sets.toMutableList().also { list ->
-                                                    list[setIndex] = set.copy(reps = newReps)
-                                                }
-                                            },
-                                            label = { Text("Reps") },
-                                            modifier = Modifier.width(100.dp)
-                                        )
+                Box(modifier = Modifier.weight(1f)) {
+                    LazyColumn {
+                        itemsIndexed(workoutExercises) { index, we ->
+                            Card(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
+                                Column(modifier = Modifier.padding(8.dp)) {
+                                    Text("Exercise: ${availableExercises[we.exerciseId] ?: "Unknown"}")
+                                    we.sets.forEachIndexed { setIndex, set ->
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            OutlinedTextField(
+                                                value = set.weight.toString(),
+                                                onValueChange = {
+                                                    val newWeight = it.toDoubleOrNull() ?: 0.0
+                                                    we.sets = we.sets.toMutableList().also { list ->
+                                                        list[setIndex] = set.copy(weight = newWeight)
+                                                    }
+                                                },
+                                                label = { Text("Weight") },
+                                                modifier = Modifier.width(100.dp)
+                                            )
+                                            OutlinedTextField(
+                                                value = set.reps.toString(),
+                                                onValueChange = {
+                                                    val newReps = it.toIntOrNull() ?: 0
+                                                    we.sets = we.sets.toMutableList().also { list ->
+                                                        list[setIndex] = set.copy(reps = newReps)
+                                                    }
+                                                },
+                                                label = { Text("Reps") },
+                                                modifier = Modifier.width(100.dp)
+                                            )
+                                        }
                                     }
+                                    Button(onClick = {
+                                        val newSetNumber = we.sets.size + 1
+                                        we.sets = we.sets + WorkoutSet(0, 0, newSetNumber, 0.0, 0)
+                                    }) { Text("Add Set") }
+                                    Button(onClick = {
+                                        if (we.sets.isNotEmpty()) {
+                                            we.sets = we.sets.dropLast(1)
+                                        }
+                                    }) { Text("Remove Last Set") }
                                 }
-                                Button(onClick = {
-                                    val newSetNumber = we.sets.size + 1
-                                    we.sets = we.sets + WorkoutSet(0, 0, newSetNumber, 0.0, 0)
-                                }) { Text("Add Set") }
-                                Button(onClick = {
-                                    if (we.sets.isNotEmpty()) {
-                                        we.sets = we.sets.dropLast(1)
-                                    }
-                                }) { Text("Remove Last Set") }
                             }
                         }
                     }

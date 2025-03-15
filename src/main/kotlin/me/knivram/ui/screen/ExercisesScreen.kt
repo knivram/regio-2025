@@ -6,7 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -21,7 +21,7 @@ class ExercisesScreen : Screen {
     @Composable
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
-        var exercises by remember { mutableStateOf(ExerciseRepository.getAll()) }
+        var exercises by remember { mutableStateOf<List<Exercise>>(emptyList()) }
         var newName by remember { mutableStateOf("") }
         var newDescription by remember { mutableStateOf("") }
         var newType by remember { mutableStateOf("") }
@@ -30,10 +30,23 @@ class ExercisesScreen : Screen {
         var editDescription by remember { mutableStateOf("") }
         var editType by remember { mutableStateOf("") }
         val coroutineScope = rememberCoroutineScope()
+
+        LaunchedEffect(Unit) {
+            exercises = ExerciseRepository.getAll()
+        }
+
         Scaffold(topBar = {
-            TopAppBar(title = { Text("Exercises") }, navigationIcon = {
-                IconButton(onClick = { navigator.pop() }) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back") }
-            })
+            TopAppBar(
+                title = { Text("Exercises") },
+                navigationIcon = {
+                    IconButton(onClick = { navigator.pop() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                }
+            )
         }) {
             Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
                 OutlinedTextField(value = newName, onValueChange = { newName = it }, label = { Text("Name") })
@@ -51,29 +64,37 @@ class ExercisesScreen : Screen {
                     }
                 }) { Text("Add Exercise") }
                 Spacer(modifier = Modifier.height(16.dp))
-                LazyColumn {
-                    items(exercises) { exercise ->
-                        Card(modifier = Modifier.fillMaxWidth().padding(8.dp).clickable {
-                            editExercise = exercise
-                            editName = exercise.name
-                            editDescription = exercise.description
-                            editType = exercise.type
-                        }) {
-                            Row(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                                Column {
-                                    Text("Name: ${exercise.name}")
-                                    Text("Description: ${exercise.description}")
-                                    Text("Type: ${exercise.type}")
-                                }
-                                Row {
-                                    Button(onClick = { navigator.push(ProgressScreen(exercise)) }) { Text("My Progress") }
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Button(onClick = {
-                                        coroutineScope.launch {
-                                            ExerciseRepository.delete(exercise.id)
-                                            exercises = ExerciseRepository.getAll()
-                                        }
-                                    }) { Text("Delete") }
+                Box(modifier = Modifier.weight(1f)) {
+                    LazyColumn {
+                        items(exercises) { exercise ->
+                            Card(modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp)
+                                .clickable {
+                                    editExercise = exercise
+                                    editName = exercise.name
+                                    editDescription = exercise.description
+                                    editType = exercise.type
+                                }) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Column {
+                                        Text("Name: ${exercise.name}")
+                                        Text("Description: ${exercise.description}")
+                                        Text("Type: ${exercise.type}")
+                                    }
+                                    Row {
+                                        Button(onClick = { navigator.push(ProgressScreen(exercise)) }) { Text("My Progress") }
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Button(onClick = {
+                                            coroutineScope.launch {
+                                                ExerciseRepository.delete(exercise.id)
+                                                exercises = ExerciseRepository.getAll()
+                                            }
+                                        }) { Text("Delete") }
+                                    }
                                 }
                             }
                         }

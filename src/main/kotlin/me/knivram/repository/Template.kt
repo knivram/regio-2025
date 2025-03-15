@@ -1,13 +1,12 @@
 package me.knivram.repository
 
 import org.jetbrains.exposed.sql.Table
-import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.update
-import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 
 object TemplateTable : Table("Template") {
     val id = integer("id").autoIncrement()
@@ -29,7 +28,7 @@ data class Template(val id: Int, val name: String, val exercises: List<TemplateE
 data class TemplateExercise(val id: Int, val templateId: Int, val exerciseId: Int, val sets: Int, val reps: Int, val position: Int)
 
 object TemplateRepository {
-    fun getAll(): List<Template> = transaction {
+    suspend fun getAll(): List<Template> = newSuspendedTransaction {
         TemplateTable.selectAll().map { row ->
             val tmplId = row[TemplateTable.id]
             val exercises = TemplateExerciseTable.selectAll().filter { it[TemplateExerciseTable.templateId] == tmplId }
@@ -48,7 +47,8 @@ object TemplateRepository {
             )
         }
     }
-    fun insert(template: Template): Int = transaction {
+
+    suspend fun insert(template: Template): Int = newSuspendedTransaction {
         val tmplId = TemplateTable.insert {
             it[name] = template.name
         } get TemplateTable.id
@@ -63,7 +63,8 @@ object TemplateRepository {
         }
         tmplId
     }
-    fun update(template: Template) = transaction {
+
+    suspend fun update(template: Template) = newSuspendedTransaction {
         TemplateTable.update({ TemplateTable.id eq template.id }) {
             it[name] = template.name
         }
@@ -78,11 +79,13 @@ object TemplateRepository {
             }
         }
     }
-    fun delete(templateId: Int) = transaction {
+
+    suspend fun delete(templateId: Int) = newSuspendedTransaction {
         TemplateExerciseTable.deleteWhere { TemplateExerciseTable.templateId eq templateId }
         TemplateTable.deleteWhere { TemplateTable.id eq templateId }
     }
-    fun getById(templateId: Int): Template? = transaction {
+
+    suspend fun getById(templateId: Int): Template? = newSuspendedTransaction {
         TemplateTable.select(TemplateTable.id, TemplateTable.name).where { TemplateTable.id eq templateId }
             .firstNotNullOfOrNull { row ->
                 val exercises =
