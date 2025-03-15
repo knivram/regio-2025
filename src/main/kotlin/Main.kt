@@ -1,13 +1,15 @@
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.layout.Column
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import cafe.adriel.voyager.navigator.Navigator
-import me.knivram.repository.TodoTable
+import me.knivram.repository.ExerciseRepository
+import me.knivram.repository.TemplateTable
+import me.knivram.repository.TemplateExerciseTable
+import me.knivram.repository.WorkoutTable
+import me.knivram.repository.WorkoutExerciseTable
+import me.knivram.repository.WorkoutSetTable
 import me.knivram.ui.screen.Home
 import org.jetbrains.exposed.sql.Database
 import org.jetbrains.exposed.sql.SchemaUtils
@@ -24,33 +26,43 @@ fun App() {
             user = "root",
             password = "password"
         )
-        
         transaction {
-            SchemaUtils.create(TodoTable)
+            SchemaUtils.create(ExerciseRepository.table)
+            SchemaUtils.create(TemplateTable)
+            SchemaUtils.create(TemplateExerciseTable)
+            SchemaUtils.create(WorkoutTable)
+            SchemaUtils.create(WorkoutExerciseTable)
+            SchemaUtils.create(WorkoutSetTable)
         }
     } catch (e: Exception) {
         println("MySQL connection failed: ${e.message}. Using H2 in-memory database instead.")
-        
-        // Connect to H2 in-memory database as fallback
         Database.connect(
             url = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1",
             driver = "org.h2.Driver"
         )
-        
         transaction {
-            SchemaUtils.create(TodoTable)
+            SchemaUtils.create(ExerciseRepository.table)
+            SchemaUtils.create(TemplateTable)
+            SchemaUtils.create(TemplateExerciseTable)
+            SchemaUtils.create(WorkoutTable)
+            SchemaUtils.create(WorkoutExerciseTable)
+            SchemaUtils.create(WorkoutSetTable)
         }
-
         isUsingH2Mem = true
     }
 
-    MaterialTheme {
-        Column {
-            if (isUsingH2Mem) {
-                Text(text = "MySQL connection failed. Using H2 in-memory database instead.", color = MaterialTheme.colors.error)
+    transaction {
+        if (ExerciseRepository.getAll().isEmpty()) {
+            val resourceStream = object {}.javaClass.classLoader.getResourceAsStream("exercises.json")
+            if (resourceStream != null) {
+                val jsonText = resourceStream.bufferedReader().readText()
+                ExerciseRepository.importFromJson(jsonText)
             }
-            Navigator(Home())
         }
+    }
+
+    MaterialTheme {
+        Navigator(Home())
     }
 }
 

@@ -4,6 +4,7 @@ plugins {
     kotlin("jvm")
     id("org.jetbrains.compose")
     id("org.jetbrains.kotlin.plugin.compose")
+    kotlin("plugin.serialization") version "2.1.10"
 }
 
 group = "me.knivram"
@@ -32,8 +33,10 @@ dependencies {
     implementation("cafe.adriel.voyager:voyager-screenmodel:$voyagerVersion")
     implementation("cafe.adriel.voyager:voyager-transitions:$voyagerVersion")
 
-    implementation("org.jetbrains.exposed:exposed-core:0.60.0")
-    implementation("org.jetbrains.exposed:exposed-jdbc:0.60.0")
+    val exposed_version = "0.60.0"
+    implementation("org.jetbrains.exposed:exposed-core:$exposed_version")
+    implementation("org.jetbrains.exposed:exposed-jdbc:$exposed_version")
+    implementation("org.jetbrains.exposed:exposed-java-time:$exposed_version")
     implementation("mysql:mysql-connector-java:8.0.33")
     implementation("com.h2database:h2:2.2.224")
 
@@ -43,6 +46,8 @@ dependencies {
     implementation("org.jetbrains.skiko:skiko-awt-runtime-linux-x64:0.9.2")
     implementation("org.jetbrains.skiko:skiko-awt-runtime-macos-arm64:0.9.2")
     implementation("org.jetbrains.skiko:skiko-awt-runtime-macos-x64:0.9.2")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
 }
 
 compose.desktop {
