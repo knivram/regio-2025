@@ -10,6 +10,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import cafe.adriel.voyager.core.screen.Screen
 import cafe.adriel.voyager.navigator.LocalNavigator
@@ -30,9 +31,21 @@ class AddEditWorkoutScreen(private val workout: Workout? = null) : Screen {
     override fun Content() {
         val navigator = LocalNavigator.currentOrThrow
         val coroutineScope = rememberCoroutineScope()
+        // Use default values if workout is null
+        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
         var name by remember { mutableStateOf(workout?.name ?: "") }
-        var startText by remember { mutableStateOf(workout?.startDatetime?.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) ?: "") }
-        var endText by remember { mutableStateOf(workout?.endDatetime?.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")) ?: "") }
+        var startText by remember {
+            mutableStateOf(
+                workout?.startDatetime?.format(formatter)
+                    ?: LocalDateTime.now().minusHours(1).format(formatter)
+            )
+        }
+        var endText by remember {
+            mutableStateOf(
+                workout?.endDatetime?.format(formatter)
+                    ?: LocalDateTime.now().format(formatter)
+            )
+        }
         var workoutExercises by remember { mutableStateOf(workout?.exercises?.toMutableList() ?: mutableListOf<WorkoutExercise>()) }
         var availableExercises by remember { mutableStateOf<Map<Int, String>>(emptyMap()) }
         var showTemplateDialog by remember { mutableStateOf(false) }
@@ -40,6 +53,8 @@ class AddEditWorkoutScreen(private val workout: Workout? = null) : Screen {
         var templates by remember { mutableStateOf<List<Template>>(emptyList()) }
         // State for the add exercise dropdown
         var addExerciseExpanded by remember { mutableStateOf(false) }
+        // For displaying error messages
+        var errorMessage by remember { mutableStateOf<String?>(null) }
 
         LaunchedEffect(Unit) {
             availableExercises = ExerciseRepository.getAll().associate { it.id to it.name }
@@ -124,6 +139,14 @@ class AddEditWorkoutScreen(private val workout: Workout? = null) : Screen {
                     label = { Text("End (yyyy-MM-dd HH:mm)") },
                     modifier = Modifier.fillMaxWidth()
                 )
+                // Display error message if any
+                errorMessage?.let {
+                    Text(
+                        text = it,
+                        color = Color.Red,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Button(onClick = { showTemplateDialog = true }) { Text("Load Template") }
                     // Single dropdown button for adding exercise.
@@ -228,17 +251,21 @@ class AddEditWorkoutScreen(private val workout: Workout? = null) : Screen {
                     Button(onClick = { navigator.pop() }) { Text("Cancel") }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = {
-                        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-                        val startDate = LocalDateTime.parse(startText, formatter)
-                        val endDate = LocalDateTime.parse(endText, formatter)
-                        val newWorkout = Workout(workout?.id ?: 0, name, startDate, endDate, workoutExercises)
-                        coroutineScope.launch {
-                            if (workout == null) {
-                                WorkoutRepository.insert(newWorkout)
-                            } else {
-                                WorkoutRepository.update(newWorkout)
+                        try {
+                            val startDate = LocalDateTime.parse(startText.trim(), formatter)
+                            val endDate = LocalDateTime.parse(endText.trim(), formatter)
+                            errorMessage = null
+                            val newWorkout = Workout(workout?.id ?: 0, name, startDate, endDate, workoutExercises)
+                            coroutineScope.launch {
+                                if (workout == null) {
+                                    WorkoutRepository.insert(newWorkout)
+                                } else {
+                                    WorkoutRepository.update(newWorkout)
+                                }
+                                navigator.pop()
                             }
-                            navigator.pop()
+                        } catch (e: Exception) {
+                            errorMessage = "Invalid date input. Please enter date in format yyyy-MM-dd HH:mm"
                         }
                     }) { Text("Save") }
                 }
