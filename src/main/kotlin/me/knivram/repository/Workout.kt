@@ -77,7 +77,6 @@ object WorkoutRepository {
             )
         }
     }
-
     suspend fun insert(workout: Workout): Int = newSuspendedTransaction {
         val workoutId = WorkoutTable.insert {
             it[name] = workout.name
@@ -101,14 +100,22 @@ object WorkoutRepository {
         }
         workoutId
     }
-
     suspend fun update(workout: Workout) = newSuspendedTransaction {
+        // Update the workout basic information.
         WorkoutTable.update({ WorkoutTable.id eq workout.id }) {
             it[name] = workout.name
             it[startDatetime] = workout.startDatetime
             it[endDatetime] = workout.endDatetime
         }
+        // First, delete child rows in WorkoutSet for the existing WorkoutExercise rows.
+        val existingExercises = WorkoutExerciseTable.selectAll().filter { it[WorkoutExerciseTable.workoutId] == workout.id }
+        existingExercises.forEach { weRow ->
+            val weId = weRow[WorkoutExerciseTable.id]
+            WorkoutSetTable.deleteWhere { WorkoutSetTable.workoutExerciseId eq weId }
+        }
+        // Now delete the existing WorkoutExercise rows.
         WorkoutExerciseTable.deleteWhere { WorkoutExerciseTable.workoutId eq workout.id }
+        // Insert new WorkoutExercise rows along with their sets.
         workout.exercises.forEach { ex ->
             val weId = WorkoutExerciseTable.insert {
                 it[workoutId] = workout.id
@@ -125,7 +132,6 @@ object WorkoutRepository {
             }
         }
     }
-
     suspend fun delete(workoutId: Int) = newSuspendedTransaction {
         val weIds = WorkoutExerciseTable.selectAll().filter { it[WorkoutExerciseTable.workoutId] == workoutId }
             .map { it[WorkoutExerciseTable.id] }
@@ -135,7 +141,6 @@ object WorkoutRepository {
         WorkoutExerciseTable.deleteWhere { WorkoutExerciseTable.workoutId eq workoutId }
         WorkoutTable.deleteWhere { WorkoutTable.id eq workoutId }
     }
-
     suspend fun getById(workoutId: Int): Workout? = newSuspendedTransaction {
         WorkoutTable.select(WorkoutTable.columns).where { WorkoutTable.id eq workoutId }
             .firstNotNullOfOrNull { row ->

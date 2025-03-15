@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -37,6 +38,8 @@ class AddEditWorkoutScreen(private val workout: Workout? = null) : Screen {
         var showTemplateDialog by remember { mutableStateOf(false) }
         var selectedTemplate by remember { mutableStateOf<Template?>(null) }
         var templates by remember { mutableStateOf<List<Template>>(emptyList()) }
+        // State for the add exercise dropdown
+        var addExerciseExpanded by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
             availableExercises = ExerciseRepository.getAll().associate { it.id to it.name }
@@ -56,9 +59,16 @@ class AddEditWorkoutScreen(private val workout: Workout? = null) : Screen {
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(8.dp)
-                                    .clickable { selectedTemplate = tmpl }
+                                    .clickable { selectedTemplate = tmpl },
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
                                 Text(tmpl.name)
+                                if (selectedTemplate?.id == tmpl.id) {
+                                    Icon(
+                                        imageVector = Icons.Default.Check,
+                                        contentDescription = "Selected"
+                                    )
+                                }
                             }
                         }
                     }
@@ -66,11 +76,11 @@ class AddEditWorkoutScreen(private val workout: Workout? = null) : Screen {
                 confirmButton = {
                     Button(onClick = {
                         selectedTemplate?.let { tmpl ->
-                            workoutExercises.clear()
-                            tmpl.exercises.forEach { te ->
+                            val newExercises = tmpl.exercises.mapIndexed { index, te ->
                                 val sets = (1..te.sets).map { idx -> WorkoutSet(0, 0, idx, 0.0, te.reps) }
-                                workoutExercises.add(WorkoutExercise(0, 0, te.exerciseId, workoutExercises.size + 1, sets))
+                                WorkoutExercise(0, 0, te.exerciseId, index + 1, sets)
                             }
+                            workoutExercises = newExercises.toMutableList()
                         }
                         showTemplateDialog = false
                     }) { Text("Load") }
@@ -96,17 +106,44 @@ class AddEditWorkoutScreen(private val workout: Workout? = null) : Screen {
             Column(modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)) {
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Workout Name") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = startText, onValueChange = { startText = it }, label = { Text("Start (yyyy-MM-dd HH:mm)") }, modifier = Modifier.fillMaxWidth())
-                OutlinedTextField(value = endText, onValueChange = { endText = it }, label = { Text("End (yyyy-MM-dd HH:mm)") }, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Workout Name") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = startText,
+                    onValueChange = { startText = it },
+                    label = { Text("Start (yyyy-MM-dd HH:mm)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = endText,
+                    onValueChange = { endText = it },
+                    label = { Text("End (yyyy-MM-dd HH:mm)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Button(onClick = { showTemplateDialog = true }) { Text("Load Template") }
-                    Button(onClick = {
-                        availableExercises.keys.firstOrNull()?.let { exId ->
-                            val newSets = listOf(WorkoutSet(0, 0, 1, 0.0, 0))
-                            workoutExercises.add(WorkoutExercise(0, 0, exId, workoutExercises.size + 1, newSets))
+                    // Single dropdown button for adding exercise.
+                    Box {
+                        Button(onClick = { addExerciseExpanded = true }) {
+                            Text("Add Exercise")
                         }
-                    }) { Text("Add Exercise") }
+                        DropdownMenu(expanded = addExerciseExpanded, onDismissRequest = { addExerciseExpanded = false }) {
+                            availableExercises.forEach { (id, exerciseName) ->
+                                DropdownMenuItem(onClick = {
+                                    workoutExercises = workoutExercises.toMutableList().apply {
+                                        add(WorkoutExercise(0, 0, id, size + 1, listOf(WorkoutSet(0, 0, 1, 0.0, 0))))
+                                    }
+                                    addExerciseExpanded = false
+                                }) {
+                                    Text(exerciseName)
+                                }
+                            }
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("Exercises:")
@@ -115,7 +152,16 @@ class AddEditWorkoutScreen(private val workout: Workout? = null) : Screen {
                         itemsIndexed(workoutExercises) { index, we ->
                             Card(modifier = Modifier.fillMaxWidth().padding(8.dp)) {
                                 Column(modifier = Modifier.padding(8.dp)) {
-                                    Text("Exercise: ${availableExercises[we.exerciseId] ?: "Unknown"}")
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text("Exercise: ${availableExercises[we.exerciseId] ?: "Unknown"}")
+                                        // Remove exercise button:
+                                        Button(onClick = {
+                                            workoutExercises = workoutExercises.toMutableList().apply { removeAt(index) }
+                                        }) { Text("Remove Exercise") }
+                                    }
                                     we.sets.forEachIndexed { setIndex, set ->
                                         Row(
                                             modifier = Modifier.fillMaxWidth(),
@@ -123,10 +169,14 @@ class AddEditWorkoutScreen(private val workout: Workout? = null) : Screen {
                                         ) {
                                             OutlinedTextField(
                                                 value = set.weight.toString(),
-                                                onValueChange = {
-                                                    val newWeight = it.toDoubleOrNull() ?: 0.0
-                                                    we.sets = we.sets.toMutableList().also { list ->
-                                                        list[setIndex] = set.copy(weight = newWeight)
+                                                onValueChange = { newWeightStr ->
+                                                    val newWeight = newWeightStr.toDoubleOrNull() ?: 0.0
+                                                    val updatedSets = we.sets.toMutableList().apply {
+                                                        set(setIndex, set.copy(weight = newWeight))
+                                                    }
+                                                    val updatedExercise = we.copy(sets = updatedSets)
+                                                    workoutExercises = workoutExercises.toMutableList().apply {
+                                                        set(index, updatedExercise)
                                                     }
                                                 },
                                                 label = { Text("Weight") },
@@ -134,10 +184,14 @@ class AddEditWorkoutScreen(private val workout: Workout? = null) : Screen {
                                             )
                                             OutlinedTextField(
                                                 value = set.reps.toString(),
-                                                onValueChange = {
-                                                    val newReps = it.toIntOrNull() ?: 0
-                                                    we.sets = we.sets.toMutableList().also { list ->
-                                                        list[setIndex] = set.copy(reps = newReps)
+                                                onValueChange = { newRepsStr ->
+                                                    val newReps = newRepsStr.toIntOrNull() ?: 0
+                                                    val updatedSets = we.sets.toMutableList().apply {
+                                                        set(setIndex, set.copy(reps = newReps))
+                                                    }
+                                                    val updatedExercise = we.copy(sets = updatedSets)
+                                                    workoutExercises = workoutExercises.toMutableList().apply {
+                                                        set(index, updatedExercise)
                                                     }
                                                 },
                                                 label = { Text("Reps") },
@@ -147,11 +201,21 @@ class AddEditWorkoutScreen(private val workout: Workout? = null) : Screen {
                                     }
                                     Button(onClick = {
                                         val newSetNumber = we.sets.size + 1
-                                        we.sets = we.sets + WorkoutSet(0, 0, newSetNumber, 0.0, 0)
+                                        val updatedSets = we.sets.toMutableList().apply {
+                                            add(WorkoutSet(0, 0, newSetNumber, 0.0, 0))
+                                        }
+                                        val updatedExercise = we.copy(sets = updatedSets)
+                                        workoutExercises = workoutExercises.toMutableList().apply {
+                                            set(index, updatedExercise)
+                                        }
                                     }) { Text("Add Set") }
                                     Button(onClick = {
                                         if (we.sets.isNotEmpty()) {
-                                            we.sets = we.sets.dropLast(1)
+                                            val updatedSets = we.sets.dropLast(1)
+                                            val updatedExercise = we.copy(sets = updatedSets)
+                                            workoutExercises = workoutExercises.toMutableList().apply {
+                                                set(index, updatedExercise)
+                                            }
                                         }
                                     }) { Text("Remove Last Set") }
                                 }
